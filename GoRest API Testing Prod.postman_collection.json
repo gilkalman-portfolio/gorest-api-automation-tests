@@ -1,0 +1,216 @@
+{
+  "info": {
+    "_postman_id": "e8a11ca2-87aa-48b1-bddc-07c254d79124",
+    "name": "GoRest API Testing Prod",
+    "description": "This Collection is for testing purposes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "13552243"
+  },
+  "item": [
+    {
+      "name": "Create User",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// 1. יצירת שם מלא אקראי\r",
+              "const fullname = pm.variables.replaceIn('{{$randomFullName}}');\r",
+              "\r",
+              "// 2. יצירת אימייל תקני: לוקחים את השם, מחליפים רווחים בנקודות, ומוסיפים מספר אקראי\r",
+              "const cleanName = fullname.replace(/\\s+/g, '.').toLowerCase();\r",
+              "const randomNum = Math.floor(Math.random() * 10000); // מספר אקראי חזק יותר\r",
+              "const customEmail = `${cleanName}.${randomNum}@example.com`;\r",
+              "\r",
+              "// 3. שמירה למשתנים\r",
+              "pm.variables.set(\"temp_name\", fullname);\r",
+              "pm.variables.set(\"temp_email\", customEmail);\r",
+              "\r",
+              "console.log(\"Creating user:\", fullname, \"with email:\", customEmail)"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Status code is 201\", function () {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "pm.test(\"Verify Name matches\", function () {\r",
+              "    pm.expect(response.name).to.eql(pm.variables.get(\"temp_name\"));\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Verify Email matches\", function () {\r",
+              "    pm.expect(response.email).to.eql(pm.variables.get(\"temp_email\"));\r",
+              "});\r",
+              "\r",
+              "// 3. שמירת ה-ID להמשך (Chaining)\r",
+              "if (response.id) {\r",
+              "    pm.environment.set(\"current_user_id\", response.id);\r",
+              "    console.log(\"User ID saved to environment: \" + response.id);\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "    {\r\n    \"name\": \"{{temp_name}}\",\r\n    \"gender\": \"male\",\r\n    \"email\": \"{{temp_email}}\", \r\n    \"status\": \"active\"\r\n    }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://gorest.co.in/public/v2/users",
+          "protocol": "https",
+          "host": [
+            "gorest",
+            "co",
+            "in"
+          ],
+          "path": [
+            "public",
+            "v2",
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Created User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Verify user exists in DB\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "    pm.expect(response.id).to.eql(pm.environment.get(\"current_user_id\"));\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Name matches DB record\", function () {\r",
+              "    pm.expect(response.name).to.eql(pm.variables.get(\"temp_name\"));\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://gorest.co.in/public/v2/users/{{current_user_id}}",
+          "protocol": "https",
+          "host": [
+            "gorest",
+            "co",
+            "in"
+          ],
+          "path": [
+            "public",
+            "v2",
+            "users",
+            "{{current_user_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Created User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Successful deletion - Status 204\", function () {\r",
+              "    pm.response.to.have.status(204);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response body is empty\", function () {\r",
+              "    pm.expect(pm.response.text()).to.be.empty;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "https://gorest.co.in/public/v2/users/{{current_user_id}}",
+          "protocol": "https",
+          "host": [
+            "gorest",
+            "co",
+            "in"
+          ],
+          "path": [
+            "public",
+            "v2",
+            "users",
+            "{{current_user_id}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
